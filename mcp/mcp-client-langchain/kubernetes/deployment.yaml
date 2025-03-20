@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clean-architecture-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: clean-architecture-api
+  template:
+    metadata:
+      labels:
+        app: clean-architecture-api
+    spec:
+      containers:
+      - name: api
+        image: clean-architecture-api:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: redis-url 
