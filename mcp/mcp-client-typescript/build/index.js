@@ -7,7 +7,7 @@ dotenv.config();
 let ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 console.log(ANTHROPIC_API_KEY);
 if (!ANTHROPIC_API_KEY) {
-    ANTHROPIC_API_KEY = "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";
+    ANTHROPIC_API_KEY = "";
     //   throw new Error("ANTHROPIC_API_KEY is not set");
 }
 class MCPClient {
