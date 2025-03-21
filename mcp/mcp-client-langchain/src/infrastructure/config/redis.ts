@@ -1,10 +1,10 @@
 import { createClient } from 'redis';
 import { logger } from './logger';
-
+import config from './config';
 export type RedisClient = ReturnType<typeof createClient>;
 
 const client = createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379',
+  url: config.REDIS_URL || 'redis://localhost:6379',
   socket: {
     reconnectStrategy: (times) => {
       const delay = Math.min(times * 50, 2000);

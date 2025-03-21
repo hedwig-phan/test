@@ -5,6 +5,9 @@ import { HelloRepository } from '../../adapters/repositories/hello.repository';
 import { AiController } from '../../adapters/controllers/ai.controller';
 import { AiUseCase } from '../../application/use-cases/ai.use-case';
 import { RedisClient } from '../config/redis';
+import config from '../config/config';
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { server } from '../../core/mcp/postgres-server';
 
 export const helloRoutes = (app: Express) => {
   const helloRepository = new HelloRepository(RedisClient);
@@ -14,13 +17,28 @@ export const helloRoutes = (app: Express) => {
   app.get('/hello', (req, res) => helloController.getHello(req, res));
 }; 
 
-export const aiRoutes = (app: Express) => {
+export const setupRoutes = (app: Express) => {
     const v1Router = Router();
     
     // AI routes
-    const aiUseCase = new AiUseCase("http://localhost:11434", "qwen2.5-coder:0.5b");
+    const aiUseCase = new AiUseCase(config.OLLAMA_URL, config.OLLAMA_MODEL);
     const aiController = new AiController(aiUseCase);
-    v1Router.get('/ai/chat', (req, res) => aiController.getAi(req, res));
+    v1Router.post('/ai/chat', (req, res) => aiController.getAi(req, res));
+
+    // MCP routes
+    let transport: SSEServerTransport | null = null;
+    v1Router.get("/mcp/sse", (req, res) => {
+        transport = new SSEServerTransport("/v1/mcp/messages", res);
+        server.connect(transport);  
+    });
+
+    v1Router.post("/mcp/messages", (req, res) => {
+        if (transport) {
+            transport.handlePostMessage(req, res);
+        } else {
+            res.status(400).json({ error: 'Transport not initialized' });
+        }
+    });
 
     // Mount all v1 routes
     app.use('/v1', v1Router);

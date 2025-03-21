@@ -1,15 +1,15 @@
 import { Ollama } from "@langchain/ollama";
+import { AiUtils } from '../../core/utils/ai.utils';
+import { AiServiceUtils } from '../utils/ai.service.utils';
 
 export class AiUseCase {
     constructor(private url: string, private model: string) {}
 
     async generateText(prompt: string) {
         try {
-            if (!prompt || prompt.trim() === '') {
-                throw new Error('Empty prompt provided');
-            }
+            const processedPrompt = await AiServiceUtils.processPrompt(prompt);
 
-            console.log('Received prompt:', prompt);
+            console.log('Received prompt:', processedPrompt);
             console.log('Using model:', this.model);
             console.log('Ollama URL:', this.url);
 
@@ -18,16 +18,12 @@ export class AiUseCase {
                 model: this.model,
             });
 
-            const response = await model.invoke(prompt);
+            const response = await model.invoke(processedPrompt);
             console.log('AI Response:', response);
-            return response;
             
+            return AiUtils.formatAiResponse(response);
         } catch (error) {
-            console.error('Ollama API Error:', error);
-            if (error instanceof Error) {
-                throw new Error(`AI generation failed: ${error.message}`);
-            }
-            throw new Error('AI generation failed: Unknown error');
+            throw AiServiceUtils.handleError(error);
         }
     }
 }

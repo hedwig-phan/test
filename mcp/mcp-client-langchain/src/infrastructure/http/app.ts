@@ -1,7 +1,6 @@
 import express from 'express';
-import { helloRoutes, aiRoutes } from './routes';
+import { helloRoutes, setupRoutes } from './routes';
 import { logger } from '../config/logger';
-
 export const createApp = () => {
   const app = express();
 
@@ -14,7 +13,6 @@ export const createApp = () => {
   });
 
   helloRoutes(app);
-  aiRoutes(app);
-
+  setupRoutes(app);
   return app;
 }; 
