@@ -1,5 +1,5 @@
 import express from 'express';
-import { setupRoutes } from './routes';
+import { helloRoutes, aiRoutes } from './routes';
 import { logger } from '../config/logger';
 
 export const createApp = () => {
@@ -13,7 +13,8 @@ export const createApp = () => {
     next();
   });
 
-  setupRoutes(app);
+  helloRoutes(app);
+  aiRoutes(app);
 
   return app;
 }; 

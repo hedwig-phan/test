@@ -9,9 +9,11 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://user:password@postgres:5432/mydb
       - REDIS_URL=redis://redis:6379
+      - OLLAMA_URL=http://ollama:11434
     depends_on:
       - postgres
       - redis
+      - ollama
 
   postgres:
     image: postgres:14-alpine
@@ -31,6 +33,14 @@ services:
     volumes:
       - redis-data:/data
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
 volumes:
   postgres-data:
-  redis-data: 
+  redis-data:
+  ollama-data: 
