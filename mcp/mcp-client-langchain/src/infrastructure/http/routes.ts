@@ -7,7 +7,6 @@ import { AiUseCase } from '../../application/use-cases/ai.use-case';
 import { RedisClient } from '../config/redis';
 import config from '../config/config';
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import { server } from '../../core/mcp/postgres-server';
 
 export const helloRoutes = (app: Express) => {
   const helloRepository = new HelloRepository(RedisClient);
@@ -26,19 +25,19 @@ export const setupRoutes = (app: Express) => {
     v1Router.post('/ai/chat', (req, res) => aiController.getAi(req, res));
 
     // MCP routes
-    let transport: SSEServerTransport | null = null;
-    v1Router.get("/mcp/sse", (req, res) => {
-        transport = new SSEServerTransport("/v1/mcp/messages", res);
-        server.connect(transport);  
-    });
+    // let transport: SSEServerTransport | null = null;
+    // v1Router.get("/mcp/sse", (req, res) => {
+    //     transport = new SSEServerTransport("/v1/mcp/messages", res);
+    //     server.connect(transport);  
+    // });
 
-    v1Router.post("/mcp/messages", (req, res) => {
-        if (transport) {
-            transport.handlePostMessage(req, res);
-        } else {
-            res.status(400).json({ error: 'Transport not initialized' });
-        }
-    });
+    // v1Router.post("/mcp/messages", (req, res) => {
+    //     if (transport) {
+    //         transport.handlePostMessage(req, res);
+    //     } else {
+    //         res.status(400).json({ error: 'Transport not initialized' });
+    //     }
+    // });
 
     // Mount all v1 routes
     app.use('/v1', v1Router);

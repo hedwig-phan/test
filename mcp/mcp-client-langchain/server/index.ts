@@ -1,14 +1,33 @@
 #!/usr/bin/env node
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import express from "express";
+
 import {
   CallToolRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { z } from 'zod';
 import pg from "pg";
-import config from "../../infrastructure/config/config";
+
+const app = express();
+// Define config schema
+const configSchema = z.object({
+  // Database
+  DATABASE_URL: z.string(),
+
+  //port 
+  PORT: z.string()
+
+})
+const config = configSchema.parse({
+  DATABASE_URL: process.env.DATABASE_URL,
+  PORT: process.env.PORT
+});
+
 export const server = new Server(
   {
     name: "example-servers/postgres",
@@ -129,9 +148,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   throw new Error(`Unknown tool: ${request.params.name}`);
 });
 
-// export async function runMCPServerPostgres() {
-//   const transport = new SSEServerTransport("/messages", res);
-//   await server.connect(transport);
-// }
+let transport: SSEServerTransport | null = null;
 
-// runServer().catch(console.error);
+app.get("/sse", (req, res) => {
+  transport = new SSEServerTransport("/messages", res);
+  server.connect(transport);
+});
+
+app.post("/messages", (req, res) => {
+  if (transport) {
+    transport.handlePostMessage(req, res);
+  }
+});
+
+console.log("App is running at port: " + config.PORT)
+app.listen(config.PORT);
