@@ -1,15 +1,30 @@
 {
   "name": "rag-pgvector-langchain",
   "version": "1.0.0",
-  "description": "",
+  "description": "## References",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "npm run build && node dist/src/src/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^16.4.7",
+    "langchain": "^0.3.19",
+    "openai": "^4.89.0",
+    "pg": "^8.14.1",
     "pgvector": "^0.2.0"
+  },
+  "devDependencies": {
+    "@langchain/core": "^0.3.43",
+    "@langchain/ollama": "^0.2.0",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.13.13",
+    "@types/pg": "^8.11.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
   }
 }

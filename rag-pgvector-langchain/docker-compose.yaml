@@ -17,5 +17,14 @@ services:
       timeout: 5s
       retries: 5
 
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
 volumes:
+  ollama-data: 
   postgres_data:
