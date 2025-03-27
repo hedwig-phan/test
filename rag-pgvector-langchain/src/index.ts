@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { createApp } from './router/api';
 import { Client } from 'pg';
+import { PgVectorDatabase } from './core/db';
 
 dotenv.config();
 
@@ -19,7 +20,9 @@ async function run() {
 
     client.connect();
     
-    const app = createApp();
+    const pgvector = new PgVectorDatabase(client);
+
+    const app = createApp(pgvector);
     
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

@@ -12,30 +12,33 @@ class PgVectorDatabase {
         this.client = client;
     }
 
-    async retrieve(state: { question: string, context: any[], answer: string }): Promise<{ context: any[] }> {
-        const queryVector = this.convertQuestionToVector(state.question);
+    //Retrieve context from db
+    async retrieve(state: State): Promise<{ context: any[] }> {
+        const queryVector = state.promptEmbedding;
         const query = `
-            SELECT id, document
-            FROM vectors
-            ORDER BY vector <-> $1
+            SELECT invoices.id, invoices."invoiceName", invoices."serviceFromDate", invoices."serviceToDate", invoices."description", invoices."status", invoices."currency", invoices."billableManMonth", invoices."rateCard", invoices."totalAmount", invoices."discount", invoices."invoiceAmount", invoices."serviceProvider", invoices."buyerName", invoices."billingEmailAddress", invoices."billingAttention", invoices."purchaseOrder", invoices."paymentTerm", invoices."paymentTermType", invoices."dueDate", invoices."paidAmount", invoices."paidDate", invoices."remainAmount"
+            FROM invoice_info_vectors
+            JOIN invoices
+                ON invoice_info_vectors.invoice_id = invoices.id
+            ORDER BY invoice_info_vectors.vector <-> $1::vector
             LIMIT 10;
         `;
-        const values = [queryVector];
 
+        const queryVectorString = JSON.stringify(queryVector);
+        const values = [queryVectorString];
+    
         try {
             const res = await this.client.query(query, values);
-            const retrievedDocs = res.rows.map(row => row.document);
-            return { context: retrievedDocs };
+            return { context: res.rows };
         } catch (err) {
             console.error('Error executing vector search:', err);
             throw err;
         }
     }
 
-    private convertQuestionToVector(question: string): number[] {
-        // Implement your logic to convert a question to a vector
-        // This is a placeholder and should be replaced with actual logic
-        return [];
+    //Get Client 
+    getClient(): Client {
+        return this.client;
     }
 }
 
