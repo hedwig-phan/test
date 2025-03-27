@@ -1,10 +1,14 @@
 import { LLMService } from '../core/llm';
 import { PgVectorDatabase } from '../core/db';
 import { StoringVectorService } from '../service/storing _vector';
+import { LineListOutputParser } from '../service/output_parser';
+import { PGVectorStore } from "@langchain/community/vectorstores/pgvector";
+
 import express from 'express';
 export const createApp = (pgvector: PgVectorDatabase) => {
     const app = express();
-    const llmService = new LLMService(pgvector);
+    const lineOutputParser = new LineListOutputParser();
+    const llmService = new LLMService(pgvector, lineOutputParser);
     const storingVectorService = new StoringVectorService(pgvector, llmService);
     
     app.use(express.json());
@@ -12,7 +16,7 @@ export const createApp = (pgvector: PgVectorDatabase) => {
     app.get('/generate-response', async (req, res) => {
         try {
             const { prompt } = req.body;
-            const response = await llmService.generateResponse(prompt);
+            const response = await llmService.processQuestion(prompt);
             res.json({ response });
         } catch (error) {
             res.status(500).json({ error: 'Failed to generate response' });
@@ -48,6 +52,11 @@ export const createApp = (pgvector: PgVectorDatabase) => {
 
     app.post('/store-all-invoice-vector', async (req, res) => {
         const result = await storingVectorService.storeInvoicesToVector();
+        res.json({ result });
+    });
+
+    app.get('/store-all-invoice-vector-invoices-table', async (req, res) => {
+        const result = await storingVectorService.storeInvoicesToVectorInvoicesTable();
         res.json({ result });
     });
 

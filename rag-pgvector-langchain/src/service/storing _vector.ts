@@ -112,6 +112,60 @@ class StoringVectorService {
         });
         return "Success";
     }
+
+      //Store user to vector all invoice
+      async storeInvoicesToVectorInvoicesTable () {
+        //Get invoice from db
+        const invoices = await this.db.getClient().query(`SELECT
+            id,
+            "invoiceDate", 
+            "invoiceNo", 
+            "invoiceName",
+            "serviceFromDate",
+            "serviceToDate",
+            "description",
+            "internalNote",
+            "status",
+            "currency",
+            "billableManMonth",
+            "rateCard",
+            "totalAmount",
+            "discount",
+            "invoiceAmount",
+            "serviceProvider",
+            "buyerName",
+            "billingEmailAddress",
+            "billingAttention",
+            "purchaseOrder",
+            "paymentTerm",
+            "paymentTermType",
+            "dueDate",
+            "paidAmount",
+            "paidDate",
+            "remainAmount",
+            "createdAt",
+            "updatedAt" FROM invoices`);
+        if (invoices.rows.length === 0) {
+            throw new Error(`Invoice not found.`);
+        }
+
+        invoices.rows.forEach(async (invoice) => {
+            const invoiceString = JSON.stringify(invoice);
+       
+            //Get vector from llm
+            const vector = await this.llmService.convertStringToVector(invoiceString);
+            
+            const vectorString = JSON.stringify(vector);
+       
+            const query = `
+                UPDATE invoices
+                SET vector = $1
+                WHERE id = $2
+            `;
+            await this.db.getClient().query(query, [vectorString, invoice.id]);
+        });
+        return "Success";
+    }
 }
 
 export { StoringVectorService };

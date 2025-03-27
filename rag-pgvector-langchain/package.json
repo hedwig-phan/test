@@ -12,7 +12,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@langchain/community": "^0.3.37",
+    "@langchain/langgraph": "^0.2.60",
     "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "langchain": "^0.3.19",
     "openai": "^4.89.0",
     "pg": "^8.14.1",

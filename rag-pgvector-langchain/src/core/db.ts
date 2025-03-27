@@ -20,8 +20,7 @@ class PgVectorDatabase {
             FROM invoice_info_vectors
             JOIN invoices
                 ON invoice_info_vectors.invoice_id = invoices.id
-            ORDER BY invoice_info_vectors.vector <-> $1::vector
-            LIMIT 10;
+            ORDER BY invoice_info_vectors.vector <-> $1::vector;
         `;
 
         const queryVectorString = JSON.stringify(queryVector);
@@ -42,4 +41,4 @@ class PgVectorDatabase {
     }
 }
 
-export {PgVectorDatabase };
+export {PgVectorDatabase};

@@ -19,5 +19,8 @@ ADD CONSTRAINT fk_invoice_info_vectors
 FOREIGN KEY (invoice_id) 
 REFERENCES invoices(id);
 
+--
+ALTER TABLE invoices 
+ADD COLUMN vector vector(768);
 
 

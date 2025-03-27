@@ -1,16 +1,42 @@
 import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
+import { PromptTemplate } from "@langchain/core/prompts";
 import { PgVectorDatabase } from "./db";
+import { DistanceStrategy, PGVectorStore, PGVectorStoreArgs } from "@langchain/community/vectorstores/pgvector";
 import { State } from "./state";
 import dotenv from 'dotenv';
+import { IOutputParser } from "../service/output_parser";
+import { MultiQueryRetriever } from "langchain/retrievers/multi_query";
+import { DocumentInterface } from "@langchain/core/documents";
+import { Annotation, StateGraph } from "@langchain/langgraph";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { pull } from "langchain/hub";
 
 dotenv.config();
 
+const QUERY_PROMPT = new PromptTemplate({
+    inputVariables: ["question"],
+    template: `You are an AI language model assistant. Your task is to generate five 
+    different versions of the given user question to retrieve relevant documents from a vector 
+    database. By generating multiple perspectives on the user question, your goal is to help
+    the user overcome some of the limitations of the distance-based similarity search. 
+    Provide these alternative questions separated by newlines.
+    Original question: {question}`,
+});
+
+
+
 class LLMService {
+    public db: PgVectorDatabase;
+
     private llm: Ollama;
     private embeddings: OllamaEmbeddings;
-    public db: PgVectorDatabase;
+    private vectorStore: PGVectorStore;
+    private outputParser: IOutputParser; // Use the interface type
+
     //Constructor
-    constructor(db: PgVectorDatabase) {
+    constructor(db: PgVectorDatabase, outputParser: IOutputParser) {
+
+        //Initialize llm
         this.llm = new Ollama({
             baseUrl: process.env.OLLAMA_URL,
             model: process.env.OLLAMA_MODEL,
@@ -21,7 +47,28 @@ class LLMService {
             model: process.env.OLLAMA_MODEL_EMBEDDING,
         });
 
+        //Initialize output parser
+        this.outputParser = outputParser;
+
+        //Initialize db 
         this.db = db;
+
+
+        //Initialize vector store
+        let vectorStoreArgs: PGVectorStoreArgs = {
+            postgresConnectionOptions: {
+                connectionString: process.env.DATABASE_URL,
+            },
+            tableName: "invoices",
+            schemaName: "public",
+            columns: {
+                idColumnName: "id",
+                vectorColumnName: "vector",
+            },
+            distanceStrategy: "cosine" as DistanceStrategy
+        };
+
+        this.vectorStore = new PGVectorStore(this.embeddings, vectorStoreArgs);
     }
 
 
@@ -35,6 +82,73 @@ class LLMService {
     async retrieveVector(question: string): Promise<number[]> {
         const res = await this.convertStringToVector(question)
         return res;
+    }
+
+    //Process question
+    async processQuestion(question: string) {
+        try {
+            const promptTemplate = await pull<ChatPromptTemplate>("rlm/rag-prompt");
+
+            const InputStateAnnotation = Annotation.Root({
+                question: Annotation<string>,
+            });
+
+            const StateAnnotation = Annotation.Root({
+                question: Annotation<string>,
+                context: Annotation<any[]>,
+                answer: Annotation<string>,
+            });
+
+            const retrieve = async (state: typeof InputStateAnnotation.State) => {
+                //Convert question to vector
+                let promptEmbedding = await this.convertStringToVector(state.question);
+
+                //Create state
+                let states = new State(state.question, "", this.embeddings, promptEmbedding);
+                const retrievedRows = await this.db.retrieve(states);
+                return { context: retrievedRows.context };
+            };
+
+            const generate = async (state: typeof StateAnnotation.State) => {
+                const rowsContent = state.context.map((row: any) => JSON.stringify(row)).join("\n");
+                const messages = await promptTemplate.invoke({ question: state.question, context: rowsContent });
+                const response = await this.llm.invoke(messages);
+                return { answer: response };
+            };
+
+            // Compile application and test
+            const graph = new StateGraph(StateAnnotation)
+                .addNode("retrieve", retrieve)
+                .addNode("generate", generate)
+                .addEdge("__start__", "retrieve")
+                .addEdge("retrieve", "generate")
+                .addEdge("generate", "__end__")
+                .compile();
+
+            let inputs = { question: question };
+            const result = await graph.invoke(inputs);
+
+            return result.answer;
+
+            // //Initialize retriever_from_llm
+            // let retriever_from_llm = MultiQueryRetriever.fromLLM({     
+            //     retriever: this.vectorStore.asRetriever(),
+            //     llm: this.llm,
+            //     verbose: true, //log
+            // });
+            
+            // const prompt = await QUERY_PROMPT.format({ question });
+
+            // const llmResponse = await retriever_from_llm.invoke(prompt);
+
+            // // const parsedOutput = await this.outputParser.parse(llmResponse);
+
+            // return llmResponse;
+
+        } catch (error) {
+            console.error("Error processing question:", error);
+            throw error;
+        }
     }
 
 
