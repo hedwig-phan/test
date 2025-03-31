@@ -1,4 +1,6 @@
 import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
+import { DefaultAzureCredential, getBearerTokenProvider } from '@azure/identity';
+import { AzureOpenAI, AzureOpenAIEmbeddings } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { PgVectorDatabase } from "./db";
 import { DistanceStrategy, PGVectorStore, PGVectorStoreArgs } from "@langchain/community/vectorstores/pgvector";
@@ -28,25 +30,58 @@ const QUERY_PROMPT = new PromptTemplate({
 class LLMService {
     public db: PgVectorDatabase;
 
-    private llm: Ollama;
-    private embeddings: OllamaEmbeddings;
+    // private llm: Ollama;
+    private llm: AzureOpenAI;
+    private embeddings: AzureOpenAIEmbeddings;
     private vectorStore: PGVectorStore;
     private outputParser: IOutputParser; // Use the interface type
 
     //Constructor
     constructor(db: PgVectorDatabase, outputParser: IOutputParser) {
 
-        //Initialize llm
-        this.llm = new Ollama({
-            baseUrl: process.env.OLLAMA_URL,
-            model: process.env.OLLAMA_MODEL,
+        // //Initialize OLLAMA llm
+        // this.llm = new Ollama({
+        //     baseUrl: process.env.OLLAMA_URL,
+        //     model: process.env.OLLAMA_MODEL,
+        // });
+
+        //Initialize embeddings
+        // this.embeddings = new OllamaEmbeddings({
+        //     baseUrl: process.env.OLLAMA_URL,
+        //     model: process.env.OLLAMA_MODEL_EMBEDDING,
+        // });
+
+    
+
+        const credentials = new DefaultAzureCredential();
+        const azureADTokenProvider = getBearerTokenProvider(
+            credentials,
+            "https://cognitiveservices.azure.com/.default"
+        );
+
+
+        this.llm = new AzureOpenAI({
+            azureADTokenProvider,
+            azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_INSTANCE_NAME,
+            azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION,
+            azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+            model: process.env.AZURE_OPENAI_AI_MODEL,
+            temperature: 0,
+            maxTokens: undefined,
+            timeout: undefined,
+            maxRetries: 2,
         });
 
-        this.embeddings = new OllamaEmbeddings({
-            baseUrl: process.env.OLLAMA_URL,
-            model: process.env.OLLAMA_MODEL_EMBEDDING,
+        this.embeddings = new AzureOpenAIEmbeddings({
+            azureADTokenProvider,
+            azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_INSTANCE_NAME,
+            azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION,
+            azureOpenAIApiDeploymentName: process.env.AZURE_OPENAI_API_DEPLOYMENT_NAME,
+            azureOpenAIApiEmbeddingsDeploymentName: process.env.AZURE_OPENAI_API_EMBEDDING_DEPLOYMENT_NAME
         });
 
+
+    
         //Initialize output parser
         this.outputParser = outputParser;
 
@@ -153,7 +188,7 @@ class LLMService {
 
 
     //Get embeddings info
-    async getEmbeddingInfor(): Promise<OllamaEmbeddings> {
+    async getEmbeddingInfor(): Promise<AzureOpenAIEmbeddings> {
         return this.embeddings;
     }
 

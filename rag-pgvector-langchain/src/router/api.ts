@@ -23,19 +23,19 @@ export const createApp = (pgvector: PgVectorDatabase) => {
         }
     });
 
-    app.get('/embeddings', (req, res) => {
+    app.get('/retrieve-vector', async (req, res) => {
+        const { prompt } = req.body;
+        const vector = await llmService.retrieveVector(prompt);
+        res.json({ vector });
+    });
+
+    app.get('/embeddings', async (req, res) => {
         try {
-            const embeddings = llmService.getEmbeddingInfor();
+            const embeddings = await llmService.getEmbeddingInfor();
             res.json({ embeddings });
         } catch (error) {
             res.status(500).json({ error: 'Failed to retrieve embeddings' });
         }
-    });
-
-    app.get('/retrieve-vector', async (req, res) => {
-        const { question } = req.body;
-        const vector = await llmService.retrieveVector(question);
-        res.json({ vector });
     });
 
     app.get('/retrieve-similarity', async (req, res) => {
