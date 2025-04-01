@@ -25,7 +25,7 @@ const configSchema = z.object({
 })
 const config = configSchema.parse({
   DATABASE_URL: process.env.DATABASE_URL,
-  PORT: process.env.PORT
+  PORT: process.env.PORT || 3001
 });
 
 export const server = new Server(
