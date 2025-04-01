@@ -17,10 +17,9 @@ class PgVectorDatabase {
         const queryVector = state.promptEmbedding;
         const query = `
             SELECT invoices.id, invoices."invoiceName", invoices."serviceFromDate", invoices."serviceToDate", invoices."description", invoices."status", invoices."currency", invoices."billableManMonth", invoices."rateCard", invoices."totalAmount", invoices."discount", invoices."invoiceAmount", invoices."serviceProvider", invoices."buyerName", invoices."billingEmailAddress", invoices."billingAttention", invoices."purchaseOrder", invoices."paymentTerm", invoices."paymentTermType", invoices."dueDate", invoices."paidAmount", invoices."paidDate", invoices."remainAmount"
-            FROM invoice_info_vectors
-            JOIN invoices
-                ON invoice_info_vectors.invoice_id = invoices.id
-            ORDER BY invoice_info_vectors.vector <-> $1::vector;
+            FROM invoices
+            ORDER BY invoices.vector <-> $1::vector
+            LIMIT 10;
         `;
 
         const queryVectorString = JSON.stringify(queryVector);

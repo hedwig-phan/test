@@ -21,6 +21,6 @@ REFERENCES invoices(id);
 
 --
 ALTER TABLE invoices 
-ADD COLUMN vector vector(768);
+ADD COLUMN vector vector(1536);
 
 

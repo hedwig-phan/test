@@ -1,6 +1,6 @@
 import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 import { DefaultAzureCredential, getBearerTokenProvider } from '@azure/identity';
-import { AzureOpenAI, AzureOpenAIEmbeddings } from "@langchain/openai";
+import {AzureChatOpenAI, AzureOpenAI, AzureOpenAIEmbeddings } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { PgVectorDatabase } from "./db";
 import { DistanceStrategy, PGVectorStore, PGVectorStoreArgs } from "@langchain/community/vectorstores/pgvector";
@@ -31,7 +31,7 @@ class LLMService {
     public db: PgVectorDatabase;
 
     // private llm: Ollama;
-    private llm: AzureOpenAI;
+    private llm: AzureChatOpenAI;
     private embeddings: AzureOpenAIEmbeddings;
     private vectorStore: PGVectorStore;
     private outputParser: IOutputParser; // Use the interface type
@@ -59,8 +59,9 @@ class LLMService {
             "https://cognitiveservices.azure.com/.default"
         );
 
+        console.log(process.env.AZURE_OPENAI_AI_MODEL);
 
-        this.llm = new AzureOpenAI({
+        this.llm = new AzureChatOpenAI({
             azureADTokenProvider,
             azureOpenAIApiInstanceName: process.env.AZURE_OPENAI_API_INSTANCE_NAME,
             azureOpenAIApiVersion: process.env.AZURE_OPENAI_API_VERSION,
@@ -70,6 +71,7 @@ class LLMService {
             maxTokens: undefined,
             timeout: undefined,
             maxRetries: 2,
+            verbose: true,
         });
 
         this.embeddings = new AzureOpenAIEmbeddings({
@@ -116,6 +118,7 @@ class LLMService {
     //Retrieve vector from embeddings
     async retrieveVector(question: string): Promise<number[]> {
         const res = await this.convertStringToVector(question)
+        console.log(res.length);
         return res;
     }
 
